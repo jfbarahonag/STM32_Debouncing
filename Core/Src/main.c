@@ -57,24 +57,22 @@ static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_TIM2_Init(void);
 /* USER CODE BEGIN PFP */
-void init_led_struct ( led_t *led );
-void init_fsm ( fsm_t *sm );
-void print_current_state ( fsm_t *fsm );
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 /* each 1 mSeg */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
-	led2.counter++;
+	led2.counter++; /* */
 
 	if (fsm_button.start_countdown == TRUE) {
 		fsm_button.counter++;
 	}
 
-	if (led2.counter >= led2.period && led2.start == 1) {
-		//HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-		led2.counter = 0;
+	if (led2.counter >= led2.period && led2.start == 1) { /* */
+		HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin); /* */
+		led2.counter = 0; /* */
 	}
 	/* 10 mSeg elapsed*/
 	if (fsm_button.counter >= TICK_PERIOD) {
@@ -133,69 +131,59 @@ int main(void)
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	while (1) {
-		if (fsm_button.new_event == TRUE) {
-			fsm_button.new_event = FALSE;
-			switch (fsm_button.state) {
-			case WAITING:
-				print_current_state(&fsm_button);
-				if ( fsm_button.event == BUTTON_ON ) {
-					fsm_button.start_countdown = TRUE;
-					fsm_button.state = DETECTED;
-				}
-				break;
-			case DETECTED:
-				print_current_state(&fsm_button);
-				if ( fsm_button.event == TICK_TIMEOUT ) {
-					if (button_pressed(B1_GPIO_Port, B1_Pin)) {
-						fsm_button.state = WAIT_RELEASE;
-						fsm_button.start_countdown = TRUE;
-					} else {
-						fsm_button.state = WAITING;
-					}
-				}
-				break;
-			case WAIT_RELEASE:
-				print_current_state(&fsm_button);
-				if ( fsm_button.event == TICK_TIMEOUT ) {
-					if (!button_pressed(B1_GPIO_Port, B1_Pin)) {
-						fsm_button.state = UPDATE;
-						fsm_button.start_countdown = TRUE;
-					} else {
-						fsm_button.state = WAIT_RELEASE;
-						fsm_button.start_countdown = TRUE;
-					}
-				}
-				break;
-			case UPDATE:
-				print_current_state(&fsm_button);
-				if ( fsm_button.event == TICK_TIMEOUT ) {
-					fsm_button.state = WAITING;
-					fsm_button.event = NON_EVENT;
-					fsm_button.new_event = FALSE;
-					print_current_state(&fsm_button);
-					HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-				}
-				break;
-			default:
-				print_current_state(&fsm_button);
-				HAL_UART_Transmit(&huart2, (uint8_t *)"Unknown State", sizeof("Unknown State"), 100);
-				break;
-			}
-		}
+		run_fsm(&fsm_button);
+//
+//		if (fsm_button.new_event == TRUE) {
+//			fsm_button.new_event = FALSE;
+//			switch (fsm_button.state) {
+//			case WAITING:
+//				print_current_state(&fsm_button);
+//				if ( fsm_button.event == BUTTON_ON ) {
+//					fsm_button.start_countdown = TRUE; /* init countdown of timer ISR */
+//					fsm_button.state = DETECTED; /* next state of fsm */
+//				}
+//				break;
+//			case DETECTED:
+//				print_current_state(&fsm_button);
+//				if ( fsm_button.event == TICK_TIMEOUT ) {
+//					if (button_pressed(B1_GPIO_Port, B1_Pin)) {
+//						fsm_button.state = WAIT_RELEASE; /* next state */
+//						fsm_button.start_countdown = TRUE;
+//					} else {
+//						fsm_button.state = WAITING;
+//					}
+//				}
+//				break;
+//			case WAIT_RELEASE:
+//				print_current_state(&fsm_button);
+//				if ( fsm_button.event == TICK_TIMEOUT ) {
+//					if (!button_pressed(B1_GPIO_Port, B1_Pin)) {
+//						fsm_button.state = UPDATE;
+//						fsm_button.start_countdown = TRUE;
+//					} else {
+//						fsm_button.state = WAIT_RELEASE;
+//						fsm_button.start_countdown = TRUE;
+//					}
+//				}
+//				break;
+//			case UPDATE:
+//				print_current_state(&fsm_button);
+//				if ( fsm_button.event == TICK_TIMEOUT ) {
+//					fsm_button.state = WAITING;
+//					fsm_button.event = NON_EVENT;
+//					fsm_button.new_event = FALSE;
+//					print_current_state(&fsm_button);
+//					HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+//				}
+//				break;
+//			default:
+//				print_current_state(&fsm_button);
+//				HAL_UART_Transmit(&huart2, (uint8_t *)"Unknown State", sizeof("Unknown State"), 100);
+//				while (1);
+//				break;
+//			}
+//		}
 
-		/*
-		if ( HAL_GetTick() > periodo ) {
-			HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-			periodo = HAL_GetTick() + PERIOD;
-		}
-		 */
-		/*
-		if (button_pressed(B1_GPIO_Port, B1_Pin)) {
-			HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
-		} else {
-			HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
-		}
-		 */
 		/* USER CODE END WHILE */
 
 		/* USER CODE BEGIN 3 */
@@ -370,7 +358,7 @@ static void MX_GPIO_Init(void)
 void init_led_struct ( led_t *led ) {
 	led->counter = 0;
 	led->period = PERIOD;
-	led->start = 1;
+	led->start = 0;
 }
 
 void init_fsm ( fsm_t *sm ) {
@@ -381,6 +369,58 @@ void init_fsm ( fsm_t *sm ) {
 	sm->start_countdown = 0;
 }
 
+void run_fsm ( fsm_t *sm ) {
+	if (sm->new_event == TRUE) {
+		sm->new_event = FALSE;
+		switch (sm->state) {
+		case WAITING:
+			print_current_state(sm);
+			if ( sm->event == BUTTON_ON ) {
+				sm->start_countdown = TRUE; /* init countdown of timer ISR */
+				sm->state = DETECTED; /* next state of fsm */
+			}
+			break;
+		case DETECTED:
+			print_current_state(sm);
+			if ( sm->event == TICK_TIMEOUT ) {
+				if (button_pressed(B1_GPIO_Port, B1_Pin)) {
+					sm->state = WAIT_RELEASE; /* next state */
+					sm->start_countdown = TRUE;
+				} else {
+					sm->state = WAITING;
+				}
+			}
+			break;
+		case WAIT_RELEASE:
+			print_current_state(sm);
+			if ( sm->event == TICK_TIMEOUT ) {
+				if (!button_pressed(B1_GPIO_Port, B1_Pin)) {
+					sm->state = UPDATE;
+					sm->start_countdown = TRUE;
+				} else {
+					sm->state = WAIT_RELEASE;
+					sm->start_countdown = TRUE;
+				}
+			}
+			break;
+		case UPDATE:
+			print_current_state(sm);
+			if ( sm->event == TICK_TIMEOUT ) {
+				sm->state = WAITING;
+				sm->event = NON_EVENT;
+				sm->new_event = FALSE;
+				print_current_state(sm);
+				HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+			}
+			break;
+		default:
+			print_current_state(sm);
+			HAL_UART_Transmit(&huart2, (uint8_t *)"Unknown State", sizeof("Unknown State"), 100);
+			while (1);
+			break;
+		}
+	}
+}
 GPIO_PinState button_pressed ( GPIO_TypeDef *port, uint16_t pin ) {
 	return !HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin);
 }
@@ -428,7 +468,7 @@ void Error_Handler(void)
  * @retval None
  */
 void assert_failed(uint8_t *file, uint32_t line)
-{ 
+{
 	/* USER CODE BEGIN 6 */
 	/* User can add his own implementation to report the file name and line number,
      tex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */

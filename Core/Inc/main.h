@@ -66,9 +66,9 @@ typedef struct _fsm_ {
 	bool_t start_countdown:1;
 }fsm_t;
 
-typedef volatile struct _led_ {
+typedef struct _led_ {
 	uint16_t period;
-	uint16_t counter; /* into the timer */
+	volatile uint16_t counter; /* into the timer */
 	uint8_t start;
 }led_t;
 
@@ -89,6 +89,10 @@ void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
 GPIO_PinState button_pressed ( GPIO_TypeDef *port, uint16_t pin );
+void init_led_struct ( led_t *led );
+void init_fsm ( fsm_t *sm );
+void print_current_state ( fsm_t *fsm );
+void run_fsm ( fsm_t *sm );
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
