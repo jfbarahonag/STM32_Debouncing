@@ -73,7 +73,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 	}
 
 	if (led2.counter >= led2.period && led2.start == 1) {
-		HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+		//HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
 		led2.counter = 0;
 	}
 	/* 10 mSeg elapsed*/
@@ -126,6 +126,8 @@ int main(void)
 	MX_TIM2_Init();
 	/* USER CODE BEGIN 2 */
 	HAL_TIM_Base_Start_IT(&htim2);
+	HAL_UART_Transmit(&huart2, (uint8_t *)"Initializing fsm...\n", sizeof("Initializing fsm...\n")-1, 100);
+	print_current_state(&fsm_button);
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
@@ -169,7 +171,9 @@ int main(void)
 				if ( fsm_button.event == TICK_TIMEOUT ) {
 					fsm_button.state = WAITING;
 					fsm_button.event = NON_EVENT;
-					fsm_button.new_event = TRUE;
+					fsm_button.new_event = FALSE;
+					print_current_state(&fsm_button);
+					HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
 				}
 				break;
 			default:
@@ -345,7 +349,7 @@ static void MX_GPIO_Init(void)
 
 	/*Configure GPIO pin : B1_Pin */
 	GPIO_InitStruct.Pin = B1_Pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+	GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
 
